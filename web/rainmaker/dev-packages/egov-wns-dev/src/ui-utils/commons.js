@@ -23,6 +23,7 @@ import {
 } from "egov-ui-framework/ui-utils/commons";
 import commonConfig from "config/common.js";
 import { getUserInfo } from "egov-ui-kit/utils/localStorageUtils";
+import printJS from 'print-js';
 
 export const updateTradeDetails = async requestBody => {
     try {
@@ -72,16 +73,19 @@ export const getSearchResults = async queryObject => {
     }
 };
 
-export const getSearchResultsForSewerage = async queryObject => {
+export const getSearchResultsForSewerage = async (queryObject, dispatch) => {
+    dispatch(toggleSpinner());
     try {
         const response = await httpRequest(
             "post",
-            "/ws-services/swc/_search",
+            "/sw-services/swc/_search",
             "_search",
             queryObject
         );
+        dispatch(toggleSpinner());
         return response;
     } catch (error) {
+        dispatch(toggleSpinner());
         store.dispatch(
             toggleSnackbar(
                 true, { labelName: error.message, labelCode: error.message },
@@ -91,7 +95,8 @@ export const getSearchResultsForSewerage = async queryObject => {
     }
 };
 
-export const getDescriptionFromMDMS = async requestBody => {
+export const getDescriptionFromMDMS = async (requestBody, dispatch) => {
+    dispatch(toggleSpinner());
     try {
         const response = await httpRequest(
             "post",
@@ -99,8 +104,10 @@ export const getDescriptionFromMDMS = async requestBody => {
             "_search", [],
             requestBody
         );
+        dispatch(toggleSpinner());
         return response;
     } catch (error) {
+        dispatch(toggleSpinner());
         store.dispatch(
             toggleSnackbar(
                 true, { labelName: error.message, labelCode: error.message },
@@ -110,7 +117,8 @@ export const getDescriptionFromMDMS = async requestBody => {
     }
 };
 
-export const fetchBill = async queryObject => {
+export const fetchBill = async (queryObject, dispatch) => {
+    dispatch(toggleSpinner());
     try {
         const response = await httpRequest(
             "post",
@@ -118,9 +126,11 @@ export const fetchBill = async queryObject => {
             "_fetchBill",
             queryObject
         );
+        dispatch(toggleSpinner());
         return response;
     } catch (error) {
-        store.dispatch(toggleSnackbar(true, { labelName: error.message, labelCode: error.message }, "error"));
+        dispatch(toggleSpinner());
+        console.log(error)
     }
 };
 
@@ -131,17 +141,17 @@ export const getMyConnectionResults = async (queryObject, dispatch) => {
         const response = await httpRequest(
             "post",
             "/ws-services/wc/_search",
-            "",
+            "_search",
             queryObject
         );
-
+       
         if (response.WaterConnection.length > 0) {
             for (let i = 0; i < response.WaterConnection.length; i++) {
                 try {
                     const data = await httpRequest(
                         "post",
                         `billing-service/bill/v2/_fetchbill?consumerCode=${response.WaterConnection[i].connectionNo}&tenantId=${response.WaterConnection[i].property.tenantId}&businessService=WS`,
-                        "",
+                        "_fetchbill",
                         // queryObject
                     );
                     if (data && data !== undefined) {
@@ -174,16 +184,19 @@ export const getMyConnectionResults = async (queryObject, dispatch) => {
 };
 
 
-export const getConsumptionDetails = async queryObject => {
+export const getConsumptionDetails = async (queryObject, dispatch) => {
+    dispatch(toggleSpinner());
     try {
         const response = await httpRequest(
             "post",
             "/ws-calculator/meterConnection/_search",
-            "",
+            "_search",
             queryObject
         );
+        dispatch(toggleSpinner());
         return response;
     } catch (error) {
+        dispatch(toggleSpinner());
         store.dispatch(
             toggleSnackbar(
                 true, { labelName: error.message, labelCode: error.message },
@@ -883,7 +896,7 @@ export const getMeterReadingData = async (dispatch) => {
     //   )
     // );
     try {
-        const response = await getConsumptionDetails(queryObject);
+        const response = await getConsumptionDetails(queryObject, dispatch);
         // const response =
         // {
         //     "ResponseInfo": {
@@ -939,6 +952,46 @@ export const createMeterReading = async (dispatch, body) => {
             false
         )
     );
+}
+
+export const wsDownloadConnectionDetails = (receiptQueryString, mode) => {
+    const FETCHCONNECTIONDETAILS = {
+        GET: {
+            URL: "/ws-services/wc/_search",
+            ACTION: "_post",
+        },
+    };
+    const DOWNLOADCONNECTIONDETAILS = {
+        GET: {
+            URL: "/pdf-service/v1/_create",
+            ACTION: "_get",
+        },
+    };
+
+    try {
+        httpRequest("post", FETCHCONNECTIONDETAILS.GET.URL, FETCHCONNECTIONDETAILS.GET.ACTION, receiptQueryString).then((payloadReceiptDetails) => {
+            const queryStr = [
+                { key: "key", value: "ws-consolidatedacknowlegment" },
+                { key: "tenantId", value: receiptQueryString[1].value.split('.')[0] }
+            ]
+            httpRequest("post", DOWNLOADCONNECTIONDETAILS.GET.URL, DOWNLOADCONNECTIONDETAILS.GET.ACTION, queryStr, { WaterConnection: payloadReceiptDetails.WaterConnection }, { 'Accept': 'application/pdf' }, { responseType: 'arraybuffer' })
+                .then(res => {
+                    getFileUrlFromAPI(res.filestoreIds[0]).then((fileRes) => {
+                        if (mode === 'download') {
+                            var win = window.open(fileRes[res.filestoreIds[0]], '_blank');
+                            win.focus();
+                        }
+                        else {
+                            printJS(fileRes[res.filestoreIds[0]])
+                        }
+                    });
+
+                });
+        })
+
+    } catch (exception) {
+        alert('Some Error Occured while downloading!');
+    }
 }
 
 
