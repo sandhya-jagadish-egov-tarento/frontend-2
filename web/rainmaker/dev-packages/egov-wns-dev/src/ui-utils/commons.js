@@ -117,6 +117,28 @@ export const getDescriptionFromMDMS = async (requestBody, dispatch) => {
     }
 };
 
+export const getNamesFromMDMS = async (queryObject, dispatch) => {
+    dispatch(toggleSpinner());
+    try {
+        const response = await httpRequest(
+            "post",
+            "/billing-service/taxheads/_search",
+            "_search",
+            queryObject
+        );
+        dispatch(toggleSpinner());
+        return response;
+    } catch (error) {
+        dispatch(toggleSpinner());
+        store.dispatch(
+            toggleSnackbar(
+                true, { labelName: error.message, labelCode: error.message },
+                "error"
+            )
+        );
+    }
+};
+
 export const fetchBill = async (queryObject, dispatch) => {
     dispatch(toggleSpinner());
     try {
