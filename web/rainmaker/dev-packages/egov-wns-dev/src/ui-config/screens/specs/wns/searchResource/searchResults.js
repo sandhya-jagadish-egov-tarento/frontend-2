@@ -57,7 +57,7 @@ export const searchResults = {
       getTextToLocalMapping("Address"),
       getTextToLocalMapping("Due Date"),
       {
-        name: getTextToLocalMapping("Action "),
+        name: getTextToLocalMapping("Action"),
         options: {
           filter: false,
           customBodyRender: (value, data) => {
