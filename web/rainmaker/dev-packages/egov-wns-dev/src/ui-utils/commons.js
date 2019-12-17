@@ -144,9 +144,10 @@ export const getMyConnectionResults = async (queryObject, dispatch) => {
             "_search",
             queryObject
         );
-       
+
         if (response.WaterConnection.length > 0) {
             for (let i = 0; i < response.WaterConnection.length; i++) {
+                response.WaterConnection[i].service = "Water"
                 try {
                     const data = await httpRequest(
                         "post",
@@ -181,6 +182,7 @@ export const getMyConnectionResults = async (queryObject, dispatch) => {
             )
         );
     }
+
 };
 
 
@@ -968,30 +970,116 @@ export const wsDownloadConnectionDetails = (receiptQueryString, mode) => {
         },
     };
 
-    try {
-        httpRequest("post", FETCHCONNECTIONDETAILS.GET.URL, FETCHCONNECTIONDETAILS.GET.ACTION, receiptQueryString).then((payloadReceiptDetails) => {
-            const queryStr = [
-                { key: "key", value: "ws-consolidatedacknowlegment" },
-                { key: "tenantId", value: receiptQueryString[1].value.split('.')[0] }
-            ]
-            httpRequest("post", DOWNLOADCONNECTIONDETAILS.GET.URL, DOWNLOADCONNECTIONDETAILS.GET.ACTION, queryStr, { WaterConnection: payloadReceiptDetails.WaterConnection }, { 'Accept': 'application/pdf' }, { responseType: 'arraybuffer' })
-                .then(res => {
-                    getFileUrlFromAPI(res.filestoreIds[0]).then((fileRes) => {
-                        if (mode === 'download') {
-                            var win = window.open(fileRes[res.filestoreIds[0]], '_blank');
-                            win.focus();
-                        }
-                        else {
-                            printJS(fileRes[res.filestoreIds[0]])
-                        }
-                    });
+    const FETCHSWCONNECTIONDETAILS = {
+        GET: {
+            URL: "/sw-services/swc/_search",
+            ACTION: "_post",
+        },
+    };
+    const service = getQueryArg(window.location.href, "service")
 
-                });
-        })
+    switch (service) {
+        case 'WATER':
+            try {
+                httpRequest("post", FETCHCONNECTIONDETAILS.GET.URL, FETCHCONNECTIONDETAILS.GET.ACTION, receiptQueryString).then((payloadReceiptDetails) => {
+                    const queryStr = [
+                        { key: "key", value: "ws-consolidatedacknowlegment" },
+                        { key: "tenantId", value: receiptQueryString[1].value.split('.')[0] }
+                    ]
+                    httpRequest("post", DOWNLOADCONNECTIONDETAILS.GET.URL, DOWNLOADCONNECTIONDETAILS.GET.ACTION, queryStr, { WaterConnection: payloadReceiptDetails.WaterConnection }, { 'Accept': 'application/pdf' }, { responseType: 'arraybuffer' })
+                        .then(res => {
+                            getFileUrlFromAPI(res.filestoreIds[0]).then((fileRes) => {
+                                if (mode === 'download') {
+                                    var win = window.open(fileRes[res.filestoreIds[0]], '_blank');
+                                    win.focus();
+                                }
+                                else {
+                                    printJS(fileRes[res.filestoreIds[0]])
+                                }
+                            });
 
-    } catch (exception) {
-        alert('Some Error Occured while downloading!');
+                        });
+                })
+
+            } catch (exception) {
+                alert('Some Error Occured while downloading!');
+            }
+            break;
+        case 'SEWERAGE':
+            try {
+                httpRequest("post", FETCHSWCONNECTIONDETAILS.GET.URL, FETCHSWCONNECTIONDETAILS.GET.ACTION, receiptQueryString).then((payloadReceiptDetails) => {
+                    const queryStr = [
+                        { key: "key", value: "ws-consolidatedsewerageconnection" },
+                        { key: "tenantId", value: receiptQueryString[1].value.split('.')[0] }
+                    ]
+                    httpRequest("post", DOWNLOADCONNECTIONDETAILS.GET.URL, DOWNLOADCONNECTIONDETAILS.GET.ACTION, queryStr, { SewerageConnections: payloadReceiptDetails.SewerageConnections }, { 'Accept': 'application/pdf' }, { responseType: 'arraybuffer' })
+                        .then(res => {
+                            getFileUrlFromAPI(res.filestoreIds[0]).then((fileRes) => {
+                                if (mode === 'download') {
+                                    var win = window.open(fileRes[res.filestoreIds[0]], '_blank');
+                                    win.focus();
+                                }
+                                else {
+                                    printJS(fileRes[res.filestoreIds[0]])
+                                }
+                            });
+
+                        });
+                })
+
+            } catch (exception) {
+                alert('Some Error Occured while downloading!');
+            }
+            break;
     }
 }
 
+export const getSWMyConnectionResults = async (queryObject, dispatch) => {
+    dispatch(toggleSpinner());
+    try {
+        const response = await httpRequest(
+            "post",
+            "/sw-services/swc/_search",
+            "_search",
+            queryObject
+        );
+        if (response.SewerageConnections.length > 0) {
+            for (let i = 0; i < response.SewerageConnections.length; i++) {
+                response.SewerageConnections[i].service = "Sewerage"
+                try {
+                    const data = await httpRequest(
+                        "post",
+                        `billing-service/bill/v2/_fetchbill?consumerCode=${response.SewerageConnections[i].connectionNo}&tenantId=${response.SewerageConnections[i].property.tenantId}&businessService=SW`,
+                        "_fetchbill",
+                        // queryObject
+                    );
+                    if (data && data !== undefined) {
+                        if (data.Bill !== undefined && data.Bill.length > 0) {
+                            response.SewerageConnections[i].due = data.Bill[0].totalAmount
+                        }
+
+                    } else {
+                        response.SewerageConnections[i].due = 0
+                    }
+
+                } catch (err) {
+                    console.log(err)
+                    response.SewerageConnections[i].due = "-"
+                }
+            }
+            // });
+        }
+        dispatch(toggleSpinner());
+        return response;
+    } catch (error) {
+        dispatch(toggleSpinner());
+        store.dispatch(
+            toggleSnackbar(
+                true, { labelName: error.message, labelCode: error.message },
+                "error"
+            )
+        );
+    }
+
+};
 
