@@ -32,7 +32,7 @@ const searchResults = async (action, state, dispatch, consumerCode) => {
         data.Bill[0].billDetails[0].billAccountDetails.forEach(async element => {
           let cessKey = element.taxHeadCode
           let body = { "MdmsCriteria": { "tenantId": "pb.amritsar", "moduleDetails": [{ "moduleName": "ws-services-calculation", "masterDetails": [{ "name": cessKey }] }] } }
-          let queryObjForNameSearch = [{ key: "tenantId", value: tenantId }, { key: "service", vale: "SW" }, { key: "code", value: cessKey }]
+          let queryObjForNameSearch = [{ key: "tenantId", value: tenantId }, { key: "service", value: "WS" }, { key: "code", value: cessKey }]
           let name = await getNamesFromMDMS(queryObjForNameSearch, dispatch)
           let res = await getDescriptionFromMDMS(body, dispatch)
           let des, obj;
@@ -41,6 +41,7 @@ const searchResults = async (action, state, dispatch, consumerCode) => {
             obj = { key: name.TaxHeadMasters[0].name, value: des[cessKey][0].description, amount: element.amount, order: element.order }
           }
           viewBillTooltip.push(obj)
+          console.log(6564, viewBillTooltip)
           if (viewBillTooltip.length >= data.Bill[0].billDetails[0].billAccountDetails.length) {
             let dataArray = [{ total: data.Bill[0].totalAmount, fromPeriod: data.Bill[0].billDetails[0].fromPeriod, toPeriod: data.Bill[0].billDetails[0].toPeriod, expiryDate: data.Bill[0].billDetails[0].expiryDate }]
             let descriptionArray = viewBillTooltip
@@ -63,6 +64,7 @@ const searchResults = async (action, state, dispatch, consumerCode) => {
   } else if (service === "SEWERAGE") {
     let queryObjectForFetchBill = [{ key: "tenantId", value: tenantId }, { key: "consumerCode", value: consumerCode }, { key: "businessService", value: "SW" }];
     let meterReadingsData = await getConsumptionDetails(queryObjectForConsumptionDetails, dispatch)
+    console.log(555, queryObjForSearch)
     let payload = await getSearchResultsForSewerage(queryObjForSearch, dispatch);
     data = await fetchBill(queryObjectForFetchBill, dispatch)
     let viewBillTooltip = []
@@ -71,12 +73,13 @@ const searchResults = async (action, state, dispatch, consumerCode) => {
         payload.SewerageConnections[0].service = service
         data.Bill[0].billDetails[0].billAccountDetails.forEach(async element => {
           let cessKey = element.taxHeadCode
-          let body = { "MdmsCriteria": { "tenantId": "pb.amritsar", "moduleDetails": [{ "moduleName": "ws-services-calculation", "masterDetails": [{ "name": cessKey }] }] } }
-          let queryObjForNameSearch = [{ key: "tenantId", value: tenantId }, { key: "service", vale: "SW" }, { key: "code", value: cessKey }]
+          let body = { "MdmsCriteria": { "tenantId": "pb.amritsar", "moduleDetails": [{ "moduleName": "sw-services-calculation", "masterDetails": [{ "name": cessKey }] }] } }
+          let queryObjForNameSearch = [{ key: "tenantId", value: tenantId }, { key: "service", value: "SW" }, { key: "code", value: cessKey }]
           let name = await getNamesFromMDMS(queryObjForNameSearch, dispatch)
           let res = await getDescriptionFromMDMS(body, dispatch)
           let des, obj;
-          if (res !== null && res !== undefined && res.MdmsRes !== undefined && res.MdmsRes !== null) { des = res.MdmsRes["ws-services-calculation"]; }
+          console.log(cessKey);
+          if (res !== null && res !== undefined && res.MdmsRes !== undefined && res.MdmsRes !== null) { des = res.MdmsRes["sw-services-calculation"]; }
           if (des !== null && des !== undefined && des[cessKey] !== undefined && des[cessKey][0] !== undefined && des[cessKey][0] !== null) {
             obj = { key: name.TaxHeadMasters[0].name, value: des[cessKey][0].description, amount: element.amount, order: element.order }
           }
