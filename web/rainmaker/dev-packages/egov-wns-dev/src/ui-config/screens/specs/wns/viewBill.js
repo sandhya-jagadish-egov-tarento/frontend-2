@@ -41,7 +41,7 @@ const searchResults = async (action, state, dispatch, consumerCode) => {
             obj = { key: name.TaxHeadMasters[0].name, value: des[cessKey][0].description, amount: element.amount, order: element.order }
           }
           viewBillTooltip.push(obj)
-          console.log(6564, viewBillTooltip)
+          
           if (viewBillTooltip.length >= data.Bill[0].billDetails[0].billAccountDetails.length) {
             let dataArray = [{ total: data.Bill[0].totalAmount, fromPeriod: data.Bill[0].billDetails[0].fromPeriod, toPeriod: data.Bill[0].billDetails[0].toPeriod, expiryDate: data.Bill[0].billDetails[0].expiryDate }]
             let descriptionArray = viewBillTooltip
@@ -64,7 +64,7 @@ const searchResults = async (action, state, dispatch, consumerCode) => {
   } else if (service === "SEWERAGE") {
     let queryObjectForFetchBill = [{ key: "tenantId", value: tenantId }, { key: "consumerCode", value: consumerCode }, { key: "businessService", value: "SW" }];
     let meterReadingsData = await getConsumptionDetails(queryObjectForConsumptionDetails, dispatch)
-    console.log(555, queryObjForSearch)
+   
     let payload = await getSearchResultsForSewerage(queryObjForSearch, dispatch);
     data = await fetchBill(queryObjectForFetchBill, dispatch)
     let viewBillTooltip = []
@@ -78,7 +78,7 @@ const searchResults = async (action, state, dispatch, consumerCode) => {
           let name = await getNamesFromMDMS(queryObjForNameSearch, dispatch)
           let res = await getDescriptionFromMDMS(body, dispatch)
           let des, obj;
-          console.log(cessKey);
+         
           if (res !== null && res !== undefined && res.MdmsRes !== undefined && res.MdmsRes !== null) { des = res.MdmsRes["sw-services-calculation"]; }
           if (des !== null && des !== undefined && des[cessKey] !== undefined && des[cessKey][0] !== undefined && des[cessKey][0] !== null) {
             obj = { key: name.TaxHeadMasters[0].name, value: des[cessKey][0].description, amount: element.amount, order: element.order }
